@@ -1,126 +1,151 @@
-<?php session_start();
-error_reporting(0);
-include("include/config.php");
-if(isset($_POST['submit']))
-{
-$puname=$_POST['username'];	
-$ppwd=md5($_POST['password']);
-$ret=mysqli_query($con,"SELECT * FROM users WHERE email='$puname' and password='$ppwd'");
-$num=mysqli_fetch_array($ret);
-if($num>0)
-{
-$_SESSION['login']=$_POST['username'];
-$_SESSION['id']=$num['id'];
-$pid=$num['id'];
-$host=$_SERVER['HTTP_HOST'];
-$uip=$_SERVER['REMOTE_ADDR'];
-$status=1;
-// For stroing log if user login successfull
-$log=mysqli_query($con,"insert into userlog(uid,username,userip,status) values('$pid','$puname','$uip','$status')");
-header("location:dashboard.php");
-}
-else
-{
-// For stroing log if user login unsuccessfull
-$_SESSION['login']=$_POST['username'];	
-$uip=$_SERVER['REMOTE_ADDR'];
-$status=0;
-mysqli_query($con,"insert into userlog(username,userip,status) values('$puname','$uip','$status')");
+<?php
+session_start();
+error_reporting(E_ALL);
+include 'include/config.php';
 
-echo "<script>alert('Invalid username or password');</script>";
-echo "<script>window.location.href='user-login.php'</script>";
-}
+if (isset($_POST['submit'])) {
+	$username = trim($_POST['username']);
+	$password = md5($_POST['password']); // keep MD5 for now
+	$userip = $_SERVER['REMOTE_ADDR'];
+
+	// Prepare SQL statement to prevent SQL injection
+	$stmt = $con->prepare("SELECT id, email FROM users WHERE email = ? AND password = ?");
+	$stmt->bind_param("ss", $username, $password);
+	$stmt->execute();
+	$result = $stmt->get_result();
+
+	$status = 0; // default to failed login
+
+	if ($result->num_rows === 1) {
+		$user = $result->fetch_assoc();
+		$_SESSION['login'] = $user['email'];
+		$_SESSION['id'] = $user['id'];
+		$status = 1;
+
+		// Log successful login
+		$logStmt = $con->prepare("INSERT INTO userlog(uid, username, userip, status) VALUES (?, ?, ?, ?)");
+		$logStmt->bind_param("issi", $user['id'], $username, $userip, $status);
+		$logStmt->execute();
+
+		header("Location: dashboard.php");
+		exit;
+	} else {
+		// Log failed login
+		$logStmt = $con->prepare("INSERT INTO userlog(username, userip, status) VALUES (?, ?, ?)");
+		$logStmt->bind_param("ssi", $username, $userip, $status);
+		$logStmt->execute();
+
+		echo "<script>alert('Invalid username or password');</script>";
+		echo "<script>window.location.href='user-login.php';</script>";
+		exit;
+	}
 }
 ?>
 
 
+
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>User-Login</title>
-		
-		<link href="http://fonts.googleapis.com/css?family=Lato:300,400,400italic,600,700|Raleway:300,400,500,600,700|Crete+Round:400italic" rel="stylesheet" type="text/css" />
-		<link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
-		<link rel="stylesheet" href="vendor/fontawesome/css/font-awesome.min.css">
-		<link rel="stylesheet" href="vendor/themify-icons/themify-icons.min.css">
-		<link href="vendor/animate.css/animate.min.css" rel="stylesheet" media="screen">
-		<link href="vendor/perfect-scrollbar/perfect-scrollbar.min.css" rel="stylesheet" media="screen">
-		<link href="vendor/switchery/switchery.min.css" rel="stylesheet" media="screen">
-		<link rel="stylesheet" href="assets/css/styles.css">
-		<link rel="stylesheet" href="assets/css/plugins.css">
-		<link rel="stylesheet" href="assets/css/themes/theme-1.css" id="skin_color" />
-	</head>
-	<body class="login">
-		<div class="row">
-			<div class="main-login col-xs-10 col-xs-offset-1 col-sm-8 col-sm-offset-2 col-md-4 col-md-offset-4">
-				<div class="logo margin-top-30">
-				<a href="../index.php"><h2> HMS | Patient Login</h2></a>
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>User Login | Advanced Healthcare Management System</title>
+
+	<link href="http://fonts.googleapis.com/css?family=Lato:300,400,400italic,600,700|Raleway:300,400,500,600,700|Crete+Round:400italic" rel="stylesheet" type="text/css" />
+	<link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="vendor/fontawesome/css/font-awesome.min.css">
+	<link rel="stylesheet" href="vendor/themify-icons/themify-icons.min.css">
+	<link href="vendor/animate.css/animate.min.css" rel="stylesheet" media="screen">
+	<link href="vendor/perfect-scrollbar/perfect-scrollbar.min.css" rel="stylesheet" media="screen">
+	<link href="vendor/switchery/switchery.min.css" rel="stylesheet" media="screen">
+	<link rel="stylesheet" href="assets/css/styles.css">
+	<link rel="stylesheet" href="assets/css/plugins.css">
+	<link rel="stylesheet" href="assets/css/themes/theme-1.css" id="skin_color" />
+</head>
+
+<body class="login">
+	<div class="row">
+		<div class="main-login col-xs-10 col-xs-offset-1 col-sm-8 col-sm-offset-2 col-md-4 col-md-offset-4">
+			<!-- Logo -->
+			<div class="logo margin-top-30 text-center">
+				<a href="../index.php">
+					<h2>HMS | Patient Login</h2>
+				</a>
+			</div>
+
+			<!-- Login Box -->
+			<div class="box-login">
+				<form class="form-login" method="post" autocomplete="on">
+					<fieldset>
+						<legend>Sign in to your account</legend>
+						<p>
+							Please enter your email and password to log in.<br>
+							<?php if (!empty($_SESSION['errmsg'])): ?>
+								<span class="text-danger"><?php echo $_SESSION['errmsg'];
+																					$_SESSION['errmsg'] = ""; ?></span>
+							<?php endif; ?>
+						</p>
+
+						<!-- Email -->
+						<div class="form-group">
+							<span class="input-icon">
+								<input type="email" name="username" class="form-control" placeholder="Email" required aria-label="Email">
+								<i class="fa fa-user"></i>
+							</span>
+						</div>
+
+						<!-- Password -->
+						<div class="form-group form-actions">
+							<span class="input-icon">
+								<input type="password" name="password" class="form-control" placeholder="Password" required aria-label="Password">
+								<i class="fa fa-lock"></i>
+							</span>
+							<a href="forgot-password.php" class="forgot-link">Forgot Password?</a>
+						</div>
+
+						<!-- Submit Button -->
+						<div class="form-actions">
+							<button type="submit" name="submit" class="btn btn-primary pull-right">
+								Login <i class="fa fa-arrow-circle-right"></i>
+							</button>
+						</div>
+
+						<!-- Registration Link -->
+						<div class="new-account text-center mt-3">
+							Don't have an account yet?
+							<a href="registration.php">Create an account</a>
+						</div>
+					</fieldset>
+				</form>
+
+				<!-- Footer -->
+				<div class="copyright text-center mt-4">
+					<span class="text-bold text-uppercase">Hospital Management System</span>
 				</div>
-
-				<div class="box-login">
-					<form class="form-login" method="post">
-						<fieldset>
-							<legend>
-								Sign in to your account
-							</legend>
-							<p>
-								Please enter your name and password to log in.<br />
-								<span style="color:red;"><?php echo $_SESSION['errmsg']; ?><?php echo $_SESSION['errmsg']="";?></span>
-							</p>
-							<div class="form-group">
-								<span class="input-icon">
-									<input type="email" class="form-control" name="username" placeholder="Email" required>
-									<i class="fa fa-user"></i> </span>
-							</div>
-							<div class="form-group form-actions">
-								<span class="input-icon">
-									<input type="password" class="form-control" name="password" placeholder="Password" required>
-									<i class="fa fa-lock"></i>
-									 </span><a href="forgot-password.php">
-									Forgot Password ?
-								</a>
-							</div>
-							<div class="form-actions">
-								
-								<button type="submit" class="btn btn-primary pull-right" name="submit">
-									Login <i class="fa fa-arrow-circle-right"></i>
-								</button>
-							</div>
-							<div class="new-account">
-								Don't have an account yet?
-								<a href="registration.php">
-									Create an account
-								</a>
-							</div>
-						</fieldset>
-					</form>
-
-					<div class="copyright">
-						</span><span class="text-bold text-uppercase"> Hospital Management System</span>.
-					</div>
-			
-				</div>
-
 			</div>
 		</div>
-		<script src="vendor/jquery/jquery.min.js"></script>
-		<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-		<script src="vendor/modernizr/modernizr.js"></script>
-		<script src="vendor/jquery-cookie/jquery.cookie.js"></script>
-		<script src="vendor/perfect-scrollbar/perfect-scrollbar.min.js"></script>
-		<script src="vendor/switchery/switchery.min.js"></script>
-		<!-- <script src="vendor/jquery-validation/jquery.validate.min.js"></script> -->
-	
-		<script src="assets/js/main.js"></script>
+	</div>
 
-		<script src="assets/js/login.js"></script>
-		<script>
-			jQuery(document).ready(function() {
-				Main.init();
-				Login.init();
-			});
-		</script>
-	
-	</body>
-	<!-- end: BODY -->
+	<!-- Scripts -->
+	<script src="vendor/jquery/jquery.min.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+	<script src="vendor/modernizr/modernizr.js"></script>
+	<script src="vendor/jquery-cookie/jquery.cookie.js"></script>
+	<script src="vendor/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+	<script src="vendor/switchery/switchery.min.js"></script>
+	<!-- <script src="vendor/jquery-validation/jquery.validate.min.js"></script> -->
+
+	<script src="assets/js/main.js"></script>
+	<script src="assets/js/login.js"></script>
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			Login.init();
+		});
+	</script>
+</body>
+
+
+
 </html>

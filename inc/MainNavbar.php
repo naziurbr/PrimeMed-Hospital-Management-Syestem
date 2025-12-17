@@ -33,7 +33,7 @@
                     <a class="nav-link nav-link-premium" href="#contact">Contact</a>
                 </li>
             </ul>
-            <a href="hms/user-login.php" class="btn btn-premium ms-lg-3">
+            <a href="user-login.php" class="btn btn-premium ms-lg-3">
                 <i class="fas fa-user-circle me-2"></i>Patient Login
             </a>
         </div>
