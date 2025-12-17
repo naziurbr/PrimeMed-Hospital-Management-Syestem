@@ -1,4 +1,5 @@
 <?php
+include 'include/config.php';
 // include_once('hms/include/config.php');
 if (isset($_POST['submit'])) {
     $name = mysqli_real_escape_string($con, $_POST['fullname']);
@@ -466,14 +467,24 @@ if (isset($_POST['submit'])) {
             <!-- Contact Info -->
             <div class="row mt-5">
                 <?php
-                $ret = mysqli_query($con, "select * from tblpage where PageType='contactus' ");
-                while ($row = mysqli_fetch_array($ret)) {
-                ?>
-                    <div class="col-md-3 mb-4">
+                $sql = "SELECT * FROM tblpage WHERE PageType = 'contactus'";
+                $result = mysqli_query($con, $sql);
 
-                    <?php } ?>
-                    </div>
+                if ($result && mysqli_num_rows($result) > 0) {
+                    while ($row = mysqli_fetch_assoc($result)) {
+                ?>
+                        <div class="col-md-3 mb-4">
+                            <h5><?= htmlspecialchars($row['PageTitle']) ?></h5>
+                            <p><?= nl2br(htmlspecialchars($row['PageDescription'])) ?></p>
+                        </div>
+                <?php
+                    }
+                } else {
+                    echo '<p class="text-muted">No contact information found.</p>';
+                }
+                ?>
             </div>
+
     </section>
 
     <?php include 'inc/MainFooter.php';  ?>
@@ -492,22 +503,6 @@ if (isset($_POST['submit'])) {
             }
         });
 
-        // Smooth scrolling with active link update
-        $('a[href^="#"]').on('click', function(e) {
-            e.preventDefault();
-            var target = this.hash;
-            var $target = $(target);
-
-            $('html, body').stop().animate({
-                'scrollTop': $target.offset().top - 100
-            }, 800, 'swing', function() {
-                window.location.hash = target;
-            });
-
-            // Update active nav link
-            $('.nav-link-premium').removeClass('active');
-            $(this).addClass('active');
-        });
 
         // Animated counters
         function animateCounter(element) {
