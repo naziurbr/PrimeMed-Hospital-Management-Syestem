@@ -273,7 +273,7 @@ if (isset($_POST['submit'])) {
                                     <span>Video Consultations</span>
                                 </div>
                             </div>
-                            <a href="hms/user-login.php" class="btn btn-primary w-100 mt-3">
+                            <a href="user-login.php" class="btn btn-primary w-100 mt-3">
                                 <i class="fas fa-sign-in-alt me-2"></i>Access Portal
                             </a>
                         </div>
@@ -305,7 +305,7 @@ if (isset($_POST['submit'])) {
                                     <span>Prescription System</span>
                                 </div>
                             </div>
-                            <a href="hms/doctor" class="btn btn-success w-100 mt-3">
+                            <a href="doctor" class="btn btn-success w-100 mt-3">
                                 <i class="fas fa-sign-in-alt me-2"></i>Access Portal
                             </a>
                         </div>
@@ -337,7 +337,7 @@ if (isset($_POST['submit'])) {
                                     <span>Reports & Analytics</span>
                                 </div>
                             </div>
-                            <a href="hms/admin" class="btn btn-purple w-100 mt-3">
+                            <a href="admin" class="btn btn-purple w-100 mt-3">
                                 <i class="fas fa-sign-in-alt me-2"></i>Access Portal
                             </a>
                         </div>
